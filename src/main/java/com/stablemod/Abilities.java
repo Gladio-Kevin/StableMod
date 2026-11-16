@@ -133,13 +133,4 @@ public class Abilities implements Listener {
             e.setDamage(e.getDamage() * (1.0 - 0.25 * n));
         }
     }
-
-    @EventHandler
-    public void onDeath(EntityDeathEvent e) {
-        // Gecici: Thobredstone, kurt adam/vampir gelene kadar cadilardan dusuyor
-        if (e.getEntityType() == EntityType.WITCH && rnd.nextInt(100) < 30) {
-            ItemStack it = Items.make("thobredstone_ingot");
-            if (it != null) e.getDrops().add(it);
-        }
-    }
 }

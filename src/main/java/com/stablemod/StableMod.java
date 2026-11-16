@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.RecipeChoice;
@@ -14,6 +15,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.List;
 
 public class StableMod extends JavaPlugin {
+    private Mobs mobs;
+
     @Override
     public void onEnable() {
         Items.init(this);
@@ -26,8 +29,10 @@ public class StableMod extends JavaPlugin {
             shaped(m, "leggings", "MMM", "M M", "M M");
             shaped(m, "boots", "M M", "M M");
         }
+        mobs = new Mobs(this);
         getServer().getPluginManager().registerEvents(new Ores(this), this);
         getServer().getPluginManager().registerEvents(new Abilities(this), this);
+        getServer().getPluginManager().registerEvents(mobs, this);
         getLogger().info("StableMod aktif!");
     }
 
@@ -59,15 +64,29 @@ public class StableMod extends JavaPlugin {
             s.sendMessage("Verildi: " + a[1]);
             return true;
         }
-        s.sendMessage("Kullanim: /stablemod give <esya> [oyuncu]");
+        if (a.length >= 2 && a[0].equalsIgnoreCase("spawn")) {
+            if (!(s instanceof Player pl)) {
+                s.sendMessage("Sadece oyuncular kullanabilir.");
+                return true;
+            }
+            LivingEntity e = mobs.spawn(a[1].toLowerCase(), pl.getLocation());
+            if (e == null) {
+                s.sendMessage("Boyle canavar yok.");
+                return true;
+            }
+            s.sendMessage("Canavar olustu: " + a[1]);
+            return true;
+        }
+        s.sendMessage("Kullanim: /stablemod give <esya> [oyuncu]  |  /stablemod spawn <canavar>");
         return true;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender s, Command c, String l, String[] a) {
-        if (a.length == 1) return List.of("give");
+        if (a.length == 1) return List.of("give", "spawn");
         if (a.length == 2) {
-            return Items.allIds().stream().filter(x -> x.startsWith(a[1].toLowerCase())).toList();
+            List<String> src = a[0].equalsIgnoreCase("spawn") ? Mobs.IDS : Items.allIds();
+            return src.stream().filter(x -> x.startsWith(a[1].toLowerCase())).toList();
         }
         return null;
     }
