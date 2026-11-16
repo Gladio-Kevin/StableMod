@@ -1,6 +1,7 @@
 package com.stablemod;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.Command;
@@ -16,6 +17,16 @@ import java.util.List;
 
 public class StableMod extends JavaPlugin {
     private Mobs mobs;
+    private Bosses bosses;
+    private Dungeons dungeons;
+
+    public Mobs mobs() {
+        return mobs;
+    }
+
+    public Bosses bosses() {
+        return bosses;
+    }
 
     @Override
     public void onEnable() {
@@ -30,9 +41,13 @@ public class StableMod extends JavaPlugin {
             shaped(m, "boots", "M M", "M M");
         }
         mobs = new Mobs(this);
+        bosses = new Bosses(this);
+        dungeons = new Dungeons(this);
         getServer().getPluginManager().registerEvents(new Ores(this), this);
         getServer().getPluginManager().registerEvents(new Abilities(this), this);
         getServer().getPluginManager().registerEvents(mobs, this);
+        getServer().getPluginManager().registerEvents(bosses, this);
+        getServer().getPluginManager().registerEvents(dungeons, this);
         getLogger().info("StableMod aktif!");
     }
 
@@ -77,14 +92,39 @@ public class StableMod extends JavaPlugin {
             s.sendMessage("Canavar olustu: " + a[1]);
             return true;
         }
-        s.sendMessage("Kullanim: /stablemod give <esya> [oyuncu]  |  /stablemod spawn <canavar>");
+        if (a.length >= 1 && a[0].equalsIgnoreCase("dungeon")) {
+            if (!(s instanceof Player pl)) {
+                s.sendMessage("Sadece oyuncular kullanabilir.");
+                return true;
+            }
+            int floors = 5;
+            if (a.length >= 2) {
+                try {
+                    floors = Math.max(1, Math.min(8, Integer.parseInt(a[1])));
+                } catch (NumberFormatException ex) {
+                    s.sendMessage("Kat sayisi bir sayi olmali.");
+                    return true;
+                }
+            }
+            Location base = pl.getLocation().clone();
+            base.setY(base.getBlockY() - 1);
+            int built = dungeons.build(base, floors);
+            if (built == 0) {
+                s.sendMessage("Buraya zindan kurulamadi, daha yuksek bir yer dene.");
+            } else {
+                s.sendMessage("Zindan kuruldu: " + built + " kat. Kulubenin icindeki merdivenden in.");
+            }
+            return true;
+        }
+        s.sendMessage("Kullanim: /stablemod give <esya> [oyuncu]  |  /stablemod spawn <canavar>  |  /stablemod dungeon [kat]");
         return true;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender s, Command c, String l, String[] a) {
-        if (a.length == 1) return List.of("give", "spawn");
+        if (a.length == 1) return List.of("give", "spawn", "dungeon");
         if (a.length == 2) {
+            if (a[0].equalsIgnoreCase("dungeon")) return List.of("3", "5", "8");
             List<String> src = a[0].equalsIgnoreCase("spawn") ? Mobs.IDS : Items.allIds();
             return src.stream().filter(x -> x.startsWith(a[1].toLowerCase())).toList();
         }
