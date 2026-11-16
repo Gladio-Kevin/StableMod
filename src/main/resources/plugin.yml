@@ -1,0 +1,4 @@
+name: StableMod
+version: 1.0
+main: com.stablemod.StableMod
+api-version: "1.21"
