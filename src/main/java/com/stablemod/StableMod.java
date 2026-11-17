@@ -13,12 +13,14 @@ import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class StableMod extends JavaPlugin {
     private Mobs mobs;
     private Bosses bosses;
     private Dungeons dungeons;
+    private Structures structures;
 
     public Mobs mobs() {
         return mobs;
@@ -28,8 +30,17 @@ public class StableMod extends JavaPlugin {
         return bosses;
     }
 
+    public Structures structures() {
+        return structures;
+    }
+
     @Override
     public void onEnable() {
+        try {
+            saveDefaultConfig();
+        } catch (IllegalArgumentException ignored) {
+            // config.yml yoksa varsayilanlarla devam et
+        }
         Items.init(this);
         for (Minerals.M m : Minerals.ALL) {
             shaped(m, "sword", "M", "M", "S");
@@ -43,11 +54,14 @@ public class StableMod extends JavaPlugin {
         mobs = new Mobs(this);
         bosses = new Bosses(this);
         dungeons = new Dungeons(this);
+        structures = new Structures(this);
         getServer().getPluginManager().registerEvents(new Ores(this), this);
         getServer().getPluginManager().registerEvents(new Abilities(this), this);
         getServer().getPluginManager().registerEvents(mobs, this);
         getServer().getPluginManager().registerEvents(bosses, this);
         getServer().getPluginManager().registerEvents(dungeons, this);
+        getServer().getPluginManager().registerEvents(structures, this);
+        getServer().getPluginManager().registerEvents(new Eggs(this), this);
         getLogger().info("StableMod aktif!");
     }
 
@@ -70,7 +84,9 @@ public class StableMod extends JavaPlugin {
                 s.sendMessage("Oyuncu bulunamadi.");
                 return true;
             }
-            ItemStack it = Items.make(a[1].toLowerCase());
+            String id = a[1].toLowerCase();
+            ItemStack it = Items.make(id);
+            if (it == null) it = Eggs.make(id);
             if (it == null) {
                 s.sendMessage("Boyle esya yok.");
                 return true;
@@ -84,7 +100,9 @@ public class StableMod extends JavaPlugin {
                 s.sendMessage("Sadece oyuncular kullanabilir.");
                 return true;
             }
-            LivingEntity e = mobs.spawn(a[1].toLowerCase(), pl.getLocation());
+            String id = a[1].toLowerCase();
+            LivingEntity e = mobs.spawn(id, pl.getLocation());
+            if (e == null) e = structures.spawnNpc(id, pl.getLocation());
             if (e == null) {
                 s.sendMessage("Boyle canavar yok.");
                 return true;
@@ -116,16 +134,40 @@ public class StableMod extends JavaPlugin {
             }
             return true;
         }
-        s.sendMessage("Kullanim: /stablemod give <esya> [oyuncu]  |  /stablemod spawn <canavar>  |  /stablemod dungeon [kat]");
+        if (a.length >= 2 && a[0].equalsIgnoreCase("build")) {
+            if (!(s instanceof Player pl)) {
+                s.sendMessage("Sadece oyuncular kullanabilir.");
+                return true;
+            }
+            Location base = pl.getLocation().clone();
+            base.setY(base.getBlockY() - 1);
+            if (!structures.build(a[1].toLowerCase(), base)) {
+                s.sendMessage("Olmadi. Secenekler: " + String.join(", ", Structures.TYPES));
+                return true;
+            }
+            s.sendMessage("Yapi kuruldu: " + a[1]);
+            return true;
+        }
+        s.sendMessage("Kullanim: /stablemod give <esya> | spawn <canavar> | dungeon [kat] | build <yapi>");
         return true;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender s, Command c, String l, String[] a) {
-        if (a.length == 1) return List.of("give", "spawn", "dungeon");
+        if (a.length == 1) return List.of("give", "spawn", "dungeon", "build");
         if (a.length == 2) {
-            if (a[0].equalsIgnoreCase("dungeon")) return List.of("3", "5", "8");
-            List<String> src = a[0].equalsIgnoreCase("spawn") ? Mobs.IDS : Items.allIds();
+            List<String> src;
+            if (a[0].equalsIgnoreCase("dungeon")) {
+                return List.of("3", "5", "8");
+            } else if (a[0].equalsIgnoreCase("build")) {
+                src = Structures.TYPES;
+            } else if (a[0].equalsIgnoreCase("spawn")) {
+                src = new ArrayList<>(Mobs.IDS);
+                src.addAll(List.of("asker", "insan_koylu", "cuce", "elf_koylu"));
+            } else {
+                src = new ArrayList<>(Items.allIds());
+                src.addAll(Eggs.allIds());
+            }
             return src.stream().filter(x -> x.startsWith(a[1].toLowerCase())).toList();
         }
         return null;

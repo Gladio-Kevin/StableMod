@@ -22,10 +22,12 @@ public class Items {
 
     private static StableMod plugin;
     private static NamespacedKey idKey;
+    private static boolean useModels;
 
     public static void init(StableMod p) {
         plugin = p;
         idKey = new NamespacedKey(p, "id");
+        useModels = p.getConfig().getBoolean("custom-textures", false);
     }
 
     public static List<String> allIds() {
@@ -90,6 +92,9 @@ public class Items {
                     .decoration(TextDecoration.ITALIC, false)));
         }
         meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, id);
+        if (useModels) {
+            meta.setItemModel(new NamespacedKey("stablemod", id));
+        }
         it.setItemMeta(meta);
         return it;
     }

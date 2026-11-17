@@ -21,6 +21,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
@@ -202,6 +203,23 @@ public class Bosses implements Listener {
                 p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 1));
             }
         }
+    }
+
+    // Seytan Kral dogunca otomatik boss olur (boss bari gorunur)
+    @EventHandler
+    public void onSpawn(CreatureSpawnEvent e) {
+        LivingEntity le = e.getEntity();
+        if (le.getType() != EntityType.WITHER_SKELETON) return;
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!le.isValid()) return;
+            String id = le.getPersistentDataContainer()
+                    .get(new NamespacedKey(plugin, "mob"), PersistentDataType.STRING);
+            if (!"seytan_kral".equals(id)) return;
+            if (le.getPersistentDataContainer().has(bossKey, PersistentDataType.STRING)) return;
+            le.getPersistentDataContainer()
+                    .set(new NamespacedKey(plugin, "summoned"), PersistentDataType.INTEGER, 1);
+            makeBoss(le, "Şeytan Kral", 5, 1.0);
+        });
     }
 
     @EventHandler
