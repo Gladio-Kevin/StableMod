@@ -21,6 +21,7 @@ public class StableMod extends JavaPlugin {
     private Bosses bosses;
     private Dungeons dungeons;
     private Structures structures;
+    private Forests forests;
 
     public Mobs mobs() {
         return mobs;
@@ -55,12 +56,14 @@ public class StableMod extends JavaPlugin {
         bosses = new Bosses(this);
         dungeons = new Dungeons(this);
         structures = new Structures(this);
+        forests = new Forests(this);
         getServer().getPluginManager().registerEvents(new Ores(this), this);
         getServer().getPluginManager().registerEvents(new Abilities(this), this);
         getServer().getPluginManager().registerEvents(mobs, this);
         getServer().getPluginManager().registerEvents(bosses, this);
         getServer().getPluginManager().registerEvents(dungeons, this);
         getServer().getPluginManager().registerEvents(structures, this);
+        getServer().getPluginManager().registerEvents(forests, this);
         getServer().getPluginManager().registerEvents(new Eggs(this), this);
         getLogger().info("StableMod aktif!");
     }
@@ -148,13 +151,28 @@ public class StableMod extends JavaPlugin {
             s.sendMessage("Yapi kuruldu: " + a[1]);
             return true;
         }
-        s.sendMessage("Kullanim: /stablemod give <esya> | spawn <canavar> | dungeon [kat] | build <yapi>");
+        if (a.length >= 1 && a[0].equalsIgnoreCase("forest")) {
+            if (!(s instanceof Player pl)) {
+                s.sendMessage("Sadece oyuncular kullanabilir.");
+                return true;
+            }
+            int cx = pl.getLocation().getBlockX() >> 4;
+            int cz = pl.getLocation().getBlockZ() >> 4;
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    forests.grow(pl.getWorld(), cx + dx, cz + dz, true);
+                }
+            }
+            s.sendMessage("Buyuk orman olusturuldu (3x3 bolge).");
+            return true;
+        }
+        s.sendMessage("Kullanim: /stablemod give <esya> | spawn <canavar> | dungeon [kat] | build <yapi> | forest");
         return true;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender s, Command c, String l, String[] a) {
-        if (a.length == 1) return List.of("give", "spawn", "dungeon", "build");
+        if (a.length == 1) return List.of("give", "spawn", "dungeon", "build", "forest");
         if (a.length == 2) {
             List<String> src;
             if (a[0].equalsIgnoreCase("dungeon")) {
